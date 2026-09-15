@@ -39,7 +39,7 @@ class RecentsActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var undoDoc: RecentDoc? = null
     private var undoIndex = 0
-    private val hideUndo = Runnable { undoBar.visibility = View.GONE; undoDoc = null }
+    private val hideUndo = Runnable { showUndoBar(false); undoDoc = null }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -155,7 +155,7 @@ class RecentsActivity : Activity() {
 
         undoDoc = doc
         undoIndex = position
-        undoBar.visibility = View.VISIBLE
+        showUndoBar(true)
         handler.removeCallbacks(hideUndo)
         handler.postDelayed(hideUndo, UNDO_MS)
     }
@@ -166,6 +166,35 @@ class RecentsActivity : Activity() {
         handler.removeCallbacks(hideUndo)
         hideUndo.run()
         reload()
+    }
+
+    /**
+     * Shows or hides the undo bar, lifting the floating button clear of it.
+     *
+     * Both sit at the bottom of the same FrameLayout, so without the shift the bar is
+     * drawn straight over the button.
+     */
+    private fun showUndoBar(show: Boolean) {
+        if (show) {
+            undoBar.visibility = View.VISIBLE
+            // The bar has no measured height until it has been laid out.
+            undoBar.post {
+                openButton.animate()
+                    .translationY(-undoBar.height.toFloat())
+                    .setDuration(180)
+                    .start()
+            }
+        } else {
+            openButton.animate().translationY(0f).setDuration(180).start()
+            undoBar.animate()
+                .alpha(0f)
+                .setDuration(180)
+                .withEndAction {
+                    undoBar.visibility = View.GONE
+                    undoBar.alpha = 1f
+                }
+                .start()
+        }
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
