@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A sheet with a folded corner, sized to sit inside the adaptive-icon safe zone. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38,30h22l12,12v36a4,4 0 0,1 -4,4h-30a4,4 0 0,1 -4,-4v-44a4,4 0 0,1 4,-4z" />
+    <path
+        android:fillColor="#99000000"
+        android:pathData="M60,30l12,12h-12z" />
+    <path
+        android:fillColor="#FF2F6FED"
+        android:pathData="M44,56h20v4h-20z M44,64h20v4h-20z M44,48h12v4h-12z" />
+</vector>

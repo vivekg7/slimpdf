@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FFF7F7F8</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="text_primary">#FF16181D</color>
+    <color name="text_secondary">#FF6B7280</color>
+    <color name="accent">#FF2F6FED</color>
+    <color name="divider">#FFE4E6EB</color>
+    <!-- The canvas behind the pages. Deliberately darker than the page so the paper
+         edge is visible without drawing a border. -->
+    <color name="reader_canvas">#FF3A3D45</color>
+    <color name="chrome_scrim">#CC101216</color>
+    <color name="chrome_text">#FFF2F3F5</color>
+    <color name="ic_launcher_bg">#FF2F6FED</color>
+</resources>

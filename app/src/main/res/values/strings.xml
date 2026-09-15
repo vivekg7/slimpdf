@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SlimPDF</string>
+    <string name="open_pdf">Open a PDF</string>
+    <string name="recents_empty">No documents yet.\n\nOpen a PDF and it will show up here, so you can pick up where you left off.</string>
+    <string name="remove">Remove</string>
+    <string name="removed">Removed from recents</string>
+    <string name="undo">Undo</string>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="page_count">%1$d pages</string>
+    <string name="error_open">Could not open this PDF.</string>
+    <string name="error_permission">This document is no longer accessible. It may have been moved or deleted, or the permission was revoked.</string>
+    <string name="error_protected">This PDF is password protected. SlimPDF cannot open encrypted documents.</string>
+    <string name="no_file_picker">No app on this device can pick files.</string>
+</resources>
