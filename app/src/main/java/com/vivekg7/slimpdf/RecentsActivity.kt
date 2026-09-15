@@ -227,14 +227,16 @@ class RecentsActivity : Activity() {
                 doc.page <= 0 -> getString(R.string.page_count, doc.pageCount)
                 else -> getString(R.string.page_of, doc.page + 1, doc.pageCount)
             }
-            val when_ = if (doc.openedAt > 0) {
-                DateUtils.getRelativeTimeSpanString(
+            val now = System.currentTimeMillis()
+            val when_ = when {
+                doc.openedAt <= 0 -> null
+                // Anything under a minute formats as "0 minutes ago", which reads as a bug.
+                now - doc.openedAt < DateUtils.MINUTE_IN_MILLIS -> getString(R.string.just_now)
+                else -> DateUtils.getRelativeTimeSpanString(
                     doc.openedAt,
-                    System.currentTimeMillis(),
+                    now,
                     DateUtils.MINUTE_IN_MILLIS,
                 ).toString()
-            } else {
-                null
             }
             return listOfNotNull(where, when_).joinToString("  ·  ")
         }
