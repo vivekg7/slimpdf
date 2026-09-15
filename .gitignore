@@ -1,9 +1,82 @@
-*.iml
+# ---------------------------------------------------------------- Gradle
 .gradle/
-local.properties
-.idea/
-.DS_Store
 build/
+gradle-app.setting
+.gradletasknamecache
+# Machine-specific SDK path; every clone writes its own.
+local.properties
+
+# ---------------------------------------------------------------- Kotlin
+.kotlin/
+kotlin-js-store/
+*.class
+
+# ---------------------------------------------------------------- Android build output
+bin/
+gen/
+out/
+/release
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+output.json
 captures/
 .externalNativeBuild/
 .cxx/
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/reports/
+lint/tmp/
+
+# ---------------------------------------------------------------- Signing material
+# Nothing here ever belongs in the repo.
+*.jks
+*.keystore
+*.p12
+*.pepk
+keystore.properties
+signing.properties
+google-services.json
+
+# ---------------------------------------------------------------- IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+.navigation/
+freeline/
+freeline.py
+freeline_project_description.json
+
+# ---------------------------------------------------------------- macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.DocumentRevisions-V100
+.TemporaryItems
+.Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+Icon[\r]
+
+# ---------------------------------------------------------------- Editors / tooling
+.vscode/
+*.swp
+*~
+node_modules/
+
+# ---------------------------------------------------------------- Logs and crash dumps
+*.log
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# ---------------------------------------------------------------- Scratch
+# Working notes, captures and throwaway files that are mine, not the project's.
+local/
