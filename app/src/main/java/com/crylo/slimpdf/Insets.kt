@@ -1,4 +1,4 @@
-package com.vivekg7.slimpdf
+package com.crylo.slimpdf
 
 import android.app.Activity
 import android.os.Build

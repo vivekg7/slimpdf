@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.vivekg7.slimpdf.SwipeRow xmlns:android="http://schemas.android.com/apk/res/android"
+<com.crylo.slimpdf.SwipeRow xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -64,4 +64,4 @@
 
     </LinearLayout>
 
-</com.vivekg7.slimpdf.SwipeRow>
+</com.crylo.slimpdf.SwipeRow>

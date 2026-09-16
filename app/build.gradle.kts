@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.vivekg7.slimpdf"
+    namespace = "com.crylo.slimpdf"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.vivekg7.slimpdf"
+        applicationId = "com.crylo.slimpdf"
         // 29 is the first API level with a guaranteed system dark-mode signal, which lets
         // the night theme come from resource qualifiers instead of an AppCompat dependency.
         minSdk = 29

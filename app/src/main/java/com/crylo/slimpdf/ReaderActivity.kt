@@ -1,4 +1,4 @@
-package com.vivekg7.slimpdf
+package com.crylo.slimpdf
 
 import android.app.Activity
 import android.content.Intent
@@ -18,7 +18,7 @@ import android.widget.TextView
 class ReaderActivity : Activity() {
 
     companion object {
-        const val EXTRA_NAME = "com.vivekg7.slimpdf.NAME"
+        const val EXTRA_NAME = "com.crylo.slimpdf.NAME"
         private const val STATE_PAGE = "page"
         private const val STATE_OFFSET = "offset"
         private const val CHROME_HIDE_MS = 2500L

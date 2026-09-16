@@ -1,4 +1,4 @@
-package com.vivekg7.slimpdf
+package com.crylo.slimpdf
 
 import android.animation.ValueAnimator
 import android.content.Context

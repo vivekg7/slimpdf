@@ -1,8 +1,8 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The release APK is **70 KB**, and the whole app is 1,351 lines of
-Kotlin compiling to 490 methods in a single dex.
+no third-party PDF engine. The release APK is **70 KB**, and the whole app is 1,351 lines
+of Kotlin compiling to 490 methods in a single dex.
 
 |                      |         |
 | -------------------- | ------- |
@@ -106,7 +106,7 @@ since SELinux blocks raw event injection on a Play system image.
 ## Layout
 
 ```
-app/src/main/java/com/vivekg7/slimpdf/
+app/src/main/java/com/crylo/slimpdf/
   PdfDoc.kt           PdfRenderer wrapper: page sizes, region rendering, spill-to-cache
   PdfView.kt          the viewer: layout, gestures, two-tier rendering
   ReaderActivity.kt   owns the document, chrome, position saving
