@@ -66,6 +66,22 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+
+    // The Kotlin stdlib drags a handful of jar metadata entries along with it. None of
+    // them are read at runtime on Android.
+    packaging {
+        resources {
+            excludes += setOf(
+                "/META-INF/*.version",
+                "/META-INF/*.kotlin_module",
+                "/META-INF/com/android/build/gradle/*",
+                "/kotlin/**",
+                "/DebugProbesKt.bin",
+                "**/*.kotlin_builtins",
+                "**/*.kotlin_metadata",
+            )
+        }
+    }
 }
 
 dependencies {

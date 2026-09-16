@@ -4,3 +4,8 @@
 -keepclasseswithmembers class * {
     public <init>(android.content.Context, android.util.AttributeSet);
 }
+
+# Size: flatten everything into the default package and let R8 widen access so it can
+# merge and inline more aggressively. Safe here because nothing is looked up by name.
+-repackageclasses ''
+-allowaccessmodification
