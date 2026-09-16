@@ -41,6 +41,26 @@ or a `local.properties` containing `sdk.dir=/path/to/Android/sdk` (git-ignored).
 ./gradlew :app:connectedAndroidTest # instrumented tests, needs a device or emulator
 ```
 
+### Signing
+
+`assembleRelease` signs the APK when a `keystore.properties` exists at the repo root:
+
+```properties
+storeFile=local/slimpdf-release.jks
+storePassword=…
+keyAlias=slimpdf
+keyPassword=…
+```
+
+Both that file and the keystore are git-ignored and must stay that way — losing them
+means never being able to ship an update to an app published under that key. Without
+them the release build still succeeds, it just comes out unsigned, so a fresh clone
+builds without any setup.
+
+Only the v3 signature scheme is applied. minSdk 29 is well past v1's API 24 cutoff and
+v2's API 24–27 window, so those blocks would be dead weight; v3 is also what permits the
+signing key to be rotated later without orphaning existing installs.
+
 ## How it works
 
 ### Three coordinate spaces
