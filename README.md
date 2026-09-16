@@ -1,12 +1,12 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The signed release APK is **61 KB**, and the whole app is 1,415 lines
+no third-party PDF engine. The signed release APK is **65 KB**, and the whole app is 1,415 lines
 of Kotlin compiling to 496 methods in a single dex.
 
 |                      |                      |
 | -------------------- | -------------------- |
-| Release APK          | 61 KB (62,036 bytes) |
+| Release APK          | 65 KB (66,132 bytes) |
 | Methods              | 496                  |
 | Runtime dependencies | none                 |
 | minSdk / targetSdk   | 29 / 36              |
@@ -25,7 +25,7 @@ of Kotlin compiling to 496 methods in a single dex.
 No text search, no text selection, no copy. `android.graphics.pdf.PdfRenderer` — the
 platform's built-in engine — rasterises pages and exposes no text layer, so any of those
 features would mean bundling PdfBox-Android or an NDK build of MuPDF/PDFium. That is
-8–15 MB against a 61 KB app, which is the opposite of the point. If you need search, this
+8–15 MB against a 65 KB app, which is the opposite of the point. If you need search, this
 is the wrong reader.
 
 Encrypted PDFs also cannot be opened, for the same reason: `PdfRenderer` rejects them.
@@ -60,6 +60,12 @@ builds without any setup.
 Only the v3 signature scheme is applied. minSdk 29 is well past v1's API 24 cutoff and
 v2's API 24–27 window, so those blocks would be dead weight; v3 is also what permits the
 signing key to be rotated later without orphaning existing installs.
+
+The key is RSA 4096 with a certificate running to 2054. RSA 2048 would save 4,096 bytes
+— the APK signing block is page-aligned, so the cost lands in whole 4 KB pages rather
+than tracking the signature size — but NIST rates 2048 as adequate only to around 2030,
+which a 2054 certificate outlives by two decades. 3072 falls in the same 4 KB page as
+4096, so there is nothing to gain by choosing it.
 
 ## How it works
 
