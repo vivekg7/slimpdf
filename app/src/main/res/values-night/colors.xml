@@ -5,6 +5,5 @@
     <color name="text_primary">#FFEDEFF2</color>
     <color name="text_secondary">#FF9AA1AC</color>
     <color name="accent">#FF6E9BFF</color>
-    <color name="divider">#FF2A2E35</color>
     <color name="reader_canvas">#FF0B0C0F</color>
 </resources>

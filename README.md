@@ -1,15 +1,15 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The signed release APK is **62 KB**, and the whole app is 1,351 lines
-of Kotlin compiling to 493 methods in a single dex.
+no third-party PDF engine. The signed release APK is **61 KB**, and the whole app is 1,415 lines
+of Kotlin compiling to 496 methods in a single dex.
 
-|                      |         |
-| -------------------- | ------- |
-| Release APK          | 62 KB   |
-| Methods              | 493     |
-| Runtime dependencies | none    |
-| minSdk / targetSdk   | 29 / 36 |
+|                      |                      |
+| -------------------- | -------------------- |
+| Release APK          | 61 KB (62,036 bytes) |
+| Methods              | 496                  |
+| Runtime dependencies | none                 |
+| minSdk / targetSdk   | 29 / 36              |
 
 ## What it does
 
@@ -25,7 +25,7 @@ of Kotlin compiling to 493 methods in a single dex.
 No text search, no text selection, no copy. `android.graphics.pdf.PdfRenderer` — the
 platform's built-in engine — rasterises pages and exposes no text layer, so any of those
 features would mean bundling PdfBox-Android or an NDK build of MuPDF/PDFium. That is
-8–15 MB against a 62 KB app, which is the opposite of the point. If you need search, this
+8–15 MB against a 61 KB app, which is the opposite of the point. If you need search, this
 is the wrong reader.
 
 Encrypted PDFs also cannot be opened, for the same reason: `PdfRenderer` rejects them.
@@ -115,9 +115,9 @@ document is never lost if the process is killed while open.
 ### Why no AndroidX
 
 Nothing here needs it. Day/night comes from resource qualifiers on a platform Material
-theme, the list is a `ListView` with a `BaseAdapter`, swipe-to-dismiss is 118 lines in
+theme, the list is a `ListView` with a `BaseAdapter`, swipe-to-dismiss is 122 lines in
 `SwipeRow`, and edge-to-edge insets are 59 lines in `Insets`. AndroidX would add megabytes
-to replace about 270 lines.
+to replace about 276 lines.
 
 The instrumented tests _do_ depend on AndroidX Test. Those are `androidTestImplementation`
 only and never reach the shipped APK — which is what makes the gestures testable at all,

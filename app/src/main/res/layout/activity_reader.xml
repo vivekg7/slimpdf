@@ -2,8 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/reader_canvas">
+    android:layout_height="match_parent">
 
     <com.crylo.slimpdf.PdfView
         android:id="@+id/pdf"
