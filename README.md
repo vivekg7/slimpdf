@@ -70,18 +70,26 @@ which a 2054 certificate outlives by two decades. 3072 falls in the same 4 KB pa
 ### Archiving a release
 
 `scripts/archive-apk.sh` builds the release APK and copies it into `local/` named from
-the version in the built manifest, alongside a `.sha256` and the signer fingerprint.
+the version in the built manifest, alongside a `.sha256`, the R8 `mapping.txt` for that
+build, and the signer fingerprint printed for confirmation.
 
 ```sh
 ./scripts/archive-apk.sh          # build, verify, archive
 ./scripts/archive-apk.sh --force  # replace an existing archive
 ```
 
+All three files share the `slimpdf-v1.0.apk` prefix, so one release is removed as a unit
+and no mapping can be left behind to be matched against the wrong APK later. Keeping the
+mapping matters because `release` minifies: without it, an obfuscated stack trace from a
+shipped build can never be read back, and the file is written under `app/build/`, which
+any clean throws away. `--no-mapping` skips it, for if minification is ever turned off.
+
 It is deliberately not wired into `assembleRelease`. A release build made while working
 on a feature would otherwise overwrite the archived APK of the same version, leaving a
-file labelled `v1.0` that is not the `v1.0` that shipped — silently. Two things guard
+file labelled `v1.0` that is not the `v1.0` that shipped — silently. Three things guard
 against that: a dirty working tree produces `slimpdf-v1.0-dirty-g1a2b3c4.apk` rather than
-the release name, and an existing target is never overwritten without `--force`.
+the release name, an existing target is never overwritten without `--force`, and an APK
+that came out unsigned is refused outright rather than archived under a release name.
 
 ## How it works
 
