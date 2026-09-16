@@ -37,6 +37,7 @@
         android:background="@color/chrome_scrim"
         android:gravity="center_vertical"
         android:orientation="horizontal"
+        android:paddingStart="0dp"
         android:paddingEnd="16dp">
 
         <ImageButton

@@ -58,7 +58,7 @@ class ReaderActivity : Activity() {
         findViewById<ImageButton>(R.id.back).setOnClickListener { finish() }
 
         Insets.onSystemBars(findViewById(R.id.root)) { top, bottom ->
-            topbar.setPadding(0, top, topbar.paddingRight, 0)
+            topbar.setPaddingRelative(0, top, topbar.paddingEnd, 0)
             (indicator.layoutParams as FrameLayout.LayoutParams).bottomMargin =
                 bottom + (28 * resources.displayMetrics.density).toInt()
             indicator.requestLayout()

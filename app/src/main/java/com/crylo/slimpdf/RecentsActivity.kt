@@ -59,16 +59,18 @@ class RecentsActivity : Activity() {
         findViewById<TextView>(R.id.undo).setOnClickListener { undoRemove() }
 
         Insets.onSystemBars(findViewById(R.id.root)) { top, bottom ->
-            header.setPadding(header.paddingLeft, top + dp(20), header.paddingRight, dp(12))
+            header.setPaddingRelative(
+                header.paddingStart, top + dp(20), header.paddingEnd, dp(12),
+            )
             // The list sits behind the header and the floating button, so pad it past both.
             header.post {
                 list.setPadding(0, header.height, 0, bottom + dp(100))
             }
             (openButton.layoutParams as FrameLayout.LayoutParams).bottomMargin = bottom + dp(28)
             openButton.requestLayout()
-            undoBar.setPadding(
-                undoBar.paddingLeft, undoBar.paddingTop,
-                undoBar.paddingRight, dp(14) + bottom,
+            undoBar.setPaddingRelative(
+                undoBar.paddingStart, undoBar.paddingTop,
+                undoBar.paddingEnd, dp(14) + bottom,
             )
         }
     }

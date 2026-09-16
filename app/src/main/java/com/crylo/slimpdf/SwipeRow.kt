@@ -1,5 +1,6 @@
 package com.crylo.slimpdf
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.view.Gravity
@@ -55,6 +56,9 @@ class SwipeRow @JvmOverloads constructor(
         backdrop.alpha = 0f
     }
 
+    // A tap that is not a drag is dispatched through performClick() below, which is what
+    // the accessibility contract asks for; there is nothing extra to do in an override.
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {

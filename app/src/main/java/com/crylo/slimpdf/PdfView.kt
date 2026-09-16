@@ -1,6 +1,7 @@
 package com.crylo.slimpdf
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -428,7 +429,9 @@ class PdfView @JvmOverloads constructor(
             }
 
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                onTap?.invoke()
+                // Routed through performClick so an accessibility service's activation
+                // gesture toggles the chrome exactly as a tap does.
+                performClick()
                 return true
             }
 
@@ -451,12 +454,22 @@ class PdfView @JvmOverloads constructor(
         },
     )
 
+    // performClick() is called, but from the GestureDetector's onSingleTapConfirmed --
+    // a tap must not fire until a double tap has been ruled out. Lint only looks for the
+    // call lexically inside onTouchEvent and cannot see it there.
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(event)
         if (!scaleDetector.isInProgress) gestures.onTouchEvent(event)
         when (event.actionMasked) {
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> scheduleDetail()
         }
+        return true
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        onTap?.invoke()
         return true
     }
 
