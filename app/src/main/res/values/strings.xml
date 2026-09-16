@@ -8,9 +8,12 @@
     <string name="undo">Undo</string>
     <string name="just_now">Just now</string>
     <string name="page_of">%1$d / %2$d</string>
-    <string name="page_count">%1$d pages</string>
     <string name="error_open">Could not open this PDF.</string>
     <string name="error_permission">This document is no longer accessible. It may have been moved or deleted, or the permission was revoked.</string>
     <string name="error_protected">This PDF is password protected. SlimPDF cannot open encrypted documents.</string>
     <string name="no_file_picker">No app on this device can pick files.</string>
+    <plurals name="page_count">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
 </resources>

@@ -224,7 +224,10 @@ class RecentsActivity : Activity() {
         private fun subtitle(doc: RecentDoc): String {
             val where = when {
                 doc.pageCount <= 0 -> null
-                doc.page <= 0 -> getString(R.string.page_count, doc.pageCount)
+                doc.page <= 0 ->
+                    resources.getQuantityString(
+                        R.plurals.page_count, doc.pageCount, doc.pageCount,
+                    )
                 else -> getString(R.string.page_of, doc.page + 1, doc.pageCount)
             }
             val now = System.currentTimeMillis()
