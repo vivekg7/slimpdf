@@ -67,6 +67,22 @@ than tracking the signature size — but NIST rates 2048 as adequate only to aro
 which a 2054 certificate outlives by two decades. 3072 falls in the same 4 KB page as
 4096, so there is nothing to gain by choosing it.
 
+### Archiving a release
+
+`scripts/archive-apk.sh` builds the release APK and copies it into `local/` named from
+the version in the built manifest, alongside a `.sha256` and the signer fingerprint.
+
+```sh
+./scripts/archive-apk.sh          # build, verify, archive
+./scripts/archive-apk.sh --force  # replace an existing archive
+```
+
+It is deliberately not wired into `assembleRelease`. A release build made while working
+on a feature would otherwise overwrite the archived APK of the same version, leaving a
+file labelled `v1.0` that is not the `v1.0` that shipped — silently. Two things guard
+against that: a dirty working tree produces `slimpdf-v1.0-dirty-g1a2b3c4.apk` rather than
+the release name, and an existing target is never overwritten without `--force`.
+
 ## How it works
 
 ### Three coordinate spaces
