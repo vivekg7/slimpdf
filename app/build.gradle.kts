@@ -13,14 +13,14 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.crylo.slimpdf"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.crylo.slimpdf"
         // 29 is the first API level with a guaranteed system dark-mode signal, which lets
         // the night theme come from resource qualifiers instead of an AppCompat dependency.
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 2
         versionName = "1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
