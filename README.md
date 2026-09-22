@@ -1,13 +1,13 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The signed release APK is **65 KB**, and the whole app is 1,415 lines
-of Kotlin compiling to 496 methods in a single dex.
+no third-party PDF engine. The signed release APK is **73 KB**, and the whole app is 1,762 lines
+of Kotlin compiling to 576 methods in a single dex.
 
 |                      |                      |
 | -------------------- | -------------------- |
-| Release APK          | 65 KB (66,132 bytes) |
-| Methods              | 496                  |
+| Release APK          | 73 KB (74,696 bytes) |
+| Methods              | 576                  |
 | Runtime dependencies | none                 |
 | minSdk / targetSdk   | 29 / 36              |
 
@@ -16,7 +16,8 @@ of Kotlin compiling to 496 methods in a single dex.
 - Open a PDF from the system picker, or via **Open with** / **Share** from any other app.
 - Continuous vertical scrolling with fling, pinch zoom and double-tap zoom.
 - Recents list showing where you left off in each document; swipe a row aside to remove it,
-  with an undo.
+  with an undo. A PDF opened from another app stays openable from there, and picks up
+  where you left off even when it is shared again under a new link.
 - Resumes at the exact scroll position, and keeps it across rotation and process death.
 - Follows the system light/dark setting.
 
@@ -142,6 +143,40 @@ never as pixels — that is what lets it survive rotation and window resizing. I
 when a document opens, debounced 1.2 s after each page change, and again on stop, so a
 document is never lost if the process is killed while open.
 
+### Documents from other apps
+
+A PDF opened through **Open with** or **Share** arrives as a `content://` URI whose read
+grant belongs to the activity it was sent to, and ends with it. Storing that URI in recents
+alone makes the entry a dead link by the time it is tapped. All files access does not
+revive a lapsed grant either: the storage provider still refuses the URI, which was checked
+on an API 36 emulator. So the reader settles, when the document first arrives, on something
+that will still be readable later, best first:
+
+1. **Its path on shared storage**, with all files access (`MANAGE_EXTERNAL_STORAGE`, asked
+   for once on first launch). The Files app, Downloads and MediaStore URIs map to a path;
+   the entry then follows the real file, edits included, and costs no space.
+2. **The URI itself**, if the sender made the grant persistable. Few do; the system picker
+   always does.
+3. **A private copy** in `files/docs/`. Mail and chat attachments live in the sender's
+   private storage and cloud documents have no local file, so for those, and for everything
+   when access is declined, this is the only option. It costs space and does not follow
+   later edits to the original.
+
+Android 10 has no all files access, so there it is 2 or 3.
+
+Every entry also stores a content fingerprint: SHA-256 over the length and 64 KB from each
+end of the file. Chat apps hand out a fresh URI each time the same file is shared, so the
+URI alone would start the document from page one every time; the fingerprint recognises it
+and resumes, and the two sightings merge into one entry. The ends are enough because a PDF
+ends in its cross-reference table and trailer, which change whenever anything in the file
+does; hashing the whole file would mean reading all of it before the first page shows.
+Copies are named by that fingerprint, so a document shared ten times is stored once.
+
+A copy is deleted once no entry refers to it, but only after the undo window for a swipe
+has closed, and never within a minute of being written, when its entry may not be saved
+yet. Copies are left out of backups, so after a restore those entries fall back to their
+original URI, which will usually no longer open.
+
 ### Why no AndroidX
 
 Nothing here needs it. Day/night comes from resource qualifiers on a platform Material
@@ -161,7 +196,8 @@ app/src/main/java/com/crylo/slimpdf/
   PdfView.kt          the viewer: layout, gestures, two-tier rendering
   ReaderActivity.kt   owns the document, chrome, position saving
   RecentsActivity.kt  launcher screen, file picker, swipe-to-remove
-  Recents.kt          the recents store
+  Recents.kt          the recents store and private copies of handed-over PDFs
+  Sources.kt          content URI to file path, content fingerprints
   SwipeRow.kt         swipe-to-dismiss list row
   Insets.kt           edge-to-edge plumbing
 ```

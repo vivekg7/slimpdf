@@ -1,13 +1,16 @@
 package com.crylo.slimpdf
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
+import android.provider.Settings
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -26,6 +29,8 @@ class RecentsActivity : Activity() {
     companion object {
         private const val REQ_OPEN = 1
         private const val UNDO_MS = 4500L
+        private const val PREFS = "app"
+        private const val KEY_ASKED_FILES = "asked_all_files"
     }
 
     private lateinit var list: ListView
@@ -39,12 +44,20 @@ class RecentsActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var undoDoc: RecentDoc? = null
     private var undoIndex = 0
-    private val hideUndo = Runnable { showUndoBar(false); undoDoc = null }
+    private val hideUndo = Runnable {
+        showUndoBar(false)
+        undoDoc = null
+        // Only now is a removed document's private copy truly unreferenced.
+        Recents.prune(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Insets.goEdgeToEdge(this)
         setContentView(R.layout.activity_recents)
+        // Catches copies orphaned by an undo window cut short, or entries pushed off the
+        // end of the list.
+        Thread({ Recents.prune(this) }, "prune").start()
 
         list = findViewById(R.id.list)
         empty = findViewById(R.id.empty)
@@ -72,6 +85,46 @@ class RecentsActivity : Activity() {
                 undoBar.paddingStart, undoBar.paddingTop,
                 undoBar.paddingEnd, dp(14) + bottom,
             )
+        }
+
+        if (savedInstanceState == null) offerFileAccess()
+    }
+
+    // ------------------------------------------------------------------ all files access
+
+    /**
+     * Asks once, on first launch, for all files access.
+     *
+     * With it a PDF opened from another app is kept in recents by its path on shared
+     * storage, so it follows the real file instead of a private copy. It is a special
+     * access granted on a Settings screen, not a runtime prompt, hence the explanation
+     * first. Declining is fine: copies cover everything, only less neatly.
+     */
+    private fun offerFileAccess() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Sources.hasFileAccess()) return
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_ASKED_FILES, false)) return
+        prefs.edit().putBoolean(KEY_ASKED_FILES, true).apply()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.files_access_title)
+            .setMessage(R.string.files_access_message)
+            .setPositiveButton(R.string.files_access_allow) { _, _ -> openFileAccessSettings() }
+            .setNegativeButton(R.string.files_access_later, null)
+            .show()
+    }
+
+    private fun openFileAccessSettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val forApp = Intent(
+            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+            Uri.fromParts("package", packageName, null),
+        )
+        try {
+            startActivity(forApp)
+        } catch (e: ActivityNotFoundException) {
+            // Some builds only offer the list of all apps.
+            val all = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+            runCatching { startActivity(all) }
         }
     }
 
@@ -128,11 +181,12 @@ class RecentsActivity : Activity() {
         open(uri, displayName(uri))
     }
 
-    private fun open(uri: Uri, name: String) {
+    private fun open(uri: Uri, name: String, reopen: Boolean = false) {
         startActivity(
             Intent(this, ReaderActivity::class.java)
                 .setData(uri)
                 .putExtra(ReaderActivity.EXTRA_NAME, name)
+                .putExtra(ReaderActivity.EXTRA_REOPEN, reopen)
         )
     }
 
@@ -218,7 +272,7 @@ class RecentsActivity : Activity() {
             val doc = docs[position]
             row.findViewById<TextView>(R.id.title).text = doc.name
             row.findViewById<TextView>(R.id.subtitle).text = subtitle(doc)
-            row.setOnClickListener { open(Uri.parse(doc.uri), doc.name) }
+            row.setOnClickListener { open(Uri.parse(doc.uri), doc.name, reopen = true) }
             row.onDismiss = { remove(docs.indexOfFirst { it.uri == doc.uri }) }
             return row
         }

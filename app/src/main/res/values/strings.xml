@@ -12,6 +12,10 @@
     <string name="error_permission">This document is no longer accessible. It may have been moved or deleted, or the permission was revoked.</string>
     <string name="error_protected">This PDF is password protected. SlimPDF cannot open encrypted documents.</string>
     <string name="no_file_picker">No app on this device can pick files.</string>
+    <string name="files_access_title">Allow access to all files?</string>
+    <string name="files_access_message">Then a PDF you open from another app stays in recents as the file itself, where it is stored. Without it, SlimPDF keeps its own copy of each one, which takes space and does not pick up later changes to the original.</string>
+    <string name="files_access_allow">Allow</string>
+    <string name="files_access_later">Not now</string>
     <plurals name="page_count">
         <item quantity="one">%1$d page</item>
         <item quantity="other">%1$d pages</item>
