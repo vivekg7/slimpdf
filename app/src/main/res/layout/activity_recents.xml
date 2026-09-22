@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<!-- Merged straight into the window's content FrameLayout; a FrameLayout of our own
+     would only be a second, identical level. -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
 
     <ListView
         android:id="@+id/list"
@@ -94,4 +93,4 @@
         android:textSize="26sp"
         android:textStyle="bold" />
 
-</FrameLayout>
+</merge>

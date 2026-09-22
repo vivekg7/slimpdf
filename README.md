@@ -6,7 +6,7 @@ of Kotlin compiling to 613 methods in a single dex.
 
 |                      |                      |
 | -------------------- | -------------------- |
-| Release APK          | 79 KB (81,120 bytes) |
+| Release APK          | 79 KB (81,076 bytes) |
 | Methods              | 613                  |
 | Runtime dependencies | none                 |
 | minSdk / targetSdk   | 29 / 37              |

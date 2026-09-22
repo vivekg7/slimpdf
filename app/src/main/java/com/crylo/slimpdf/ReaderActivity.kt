@@ -70,7 +70,7 @@ class ReaderActivity : Activity() {
 
         findViewById<ImageButton>(R.id.back).setOnClickListener { finish() }
 
-        Insets.onSystemBars(findViewById(R.id.root)) { top, bottom ->
+        Insets.onSystemBars(findViewById(android.R.id.content)) { top, bottom ->
             topbar.setPaddingRelative(0, top, topbar.paddingEnd, 0)
             pdf.topInset = top
             (indicator.layoutParams as FrameLayout.LayoutParams).bottomMargin =

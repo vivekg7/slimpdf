@@ -79,7 +79,7 @@ class RecentsActivity : Activity() {
         openButton.setOnClickListener { pickDocument() }
         findViewById<TextView>(R.id.undo).setOnClickListener { undoRemove() }
 
-        Insets.onSystemBars(findViewById(R.id.root)) { top, bottom ->
+        Insets.onSystemBars(findViewById(android.R.id.content)) { top, bottom ->
             header.setPaddingRelative(
                 header.paddingStart, top + dp(20), header.paddingEnd, dp(12),
             )
