@@ -18,6 +18,8 @@ of Kotlin compiling to 586 methods in a single dex.
 - Recents list showing where you left off in each document; swipe a row aside to remove it,
   with an undo. A PDF opened from another app stays openable from there, and picks up
   where you left off even when it is shared again under a new link.
+- Pages run edge to edge under the status bar, except that a document opened at the top
+  starts its first page just below it.
 - Resumes at the exact scroll position, and keeps it across rotation and process death.
 - Follows the system light/dark setting.
 

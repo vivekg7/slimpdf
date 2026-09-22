@@ -72,6 +72,7 @@ class ReaderActivity : Activity() {
 
         Insets.onSystemBars(findViewById(R.id.root)) { top, bottom ->
             topbar.setPaddingRelative(0, top, topbar.paddingEnd, 0)
+            pdf.topInset = top
             (indicator.layoutParams as FrameLayout.LayoutParams).bottomMargin =
                 bottom + (28 * resources.displayMetrics.density).toInt()
             indicator.requestLayout()

@@ -153,6 +153,22 @@ class PdfView @JvmOverloads constructor(
         return p to if (h > 0f) ((topC - tops[p]) / h).coerceIn(0f, 1f) else 0f
     }
 
+    /**
+     * Extra space above the first page, in view px: the status bar height.
+     *
+     * The reader draws edge to edge so pages scroll under the status bar, but a document
+     * opened at the top should not start with its first lines behind the clock. Only the
+     * first page is pushed down; once scrolled, pages pass under the bar as before.
+     */
+    var topInset = 0
+        set(value) {
+            if (field == value) return
+            field = value
+            if (tops.isEmpty()) return
+            pendingRestore = anchor()
+            buildLayout()
+        }
+
     fun close() {
         closed = true
         removeCallbacks(settle)
@@ -187,7 +203,7 @@ class PdfView @JvmOverloads constructor(
         contentW = width.toFloat()
         val gap = gapPx
         tops = FloatArray(d.pageCount)
-        var y = gap
+        var y = gap + topInset
         for (i in 0 until d.pageCount) {
             tops[i] = y
             y += d.heightPoints(i) * baseScale + gap
@@ -196,8 +212,10 @@ class PdfView @JvmOverloads constructor(
 
         pendingRestore?.let { (p, off) ->
             pendingRestore = null
-            scrollYf = ((tops[p.coerceIn(0, tops.size - 1)] +
-                off * pageHeight(p.coerceIn(0, tops.size - 1))) * zoom)
+            val q = p.coerceIn(0, tops.size - 1)
+            // The very start restores to the very top, above [topInset], not to the
+            // first page's edge.
+            scrollYf = if (q == 0 && off == 0f) 0f else (tops[q] + off * pageHeight(q)) * zoom
         }
         clampScroll()
         notifyPage()
