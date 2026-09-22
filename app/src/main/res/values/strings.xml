@@ -6,6 +6,12 @@
     <string name="remove">Remove</string>
     <string name="removed">Removed from recents</string>
     <string name="undo">Undo</string>
+    <string name="favorites">Favourites</string>
+    <string name="recent">Recent</string>
+    <string name="favorite">Favourite</string>
+    <string name="add_favorite">Add to favourites</string>
+    <string name="remove_favorite">Remove from favourites</string>
+    <string name="remove_from_recents">Remove from recents</string>
     <string name="just_now">Just now</string>
     <string name="page_of">%1$d / %2$d</string>
     <string name="error_open">Could not open this PDF.</string>

@@ -13,13 +13,14 @@ import kotlin.math.abs
 import kotlin.math.min
 
 /**
- * A list row that can be flung aside to dismiss it.
+ * A list row that can be flung aside to dismiss it, tapped, or long-pressed.
  *
  * Child 0 is the backdrop revealed by the drag; child 1 is the row itself and is the view
  * that moves. The row consumes its own touches rather than leaning on ListView's item
  * click, because a child that consumes MOVE events never gets them back from AbsListView.
  * Vertical drags are left alone until the gesture is clearly horizontal, so the list still
- * scrolls normally.
+ * scrolls normally. Consuming its own touches also means it has to time its own long
+ * press: the platform one only runs for a view that leaves its events to super.
  */
 class SwipeRow @JvmOverloads constructor(
     context: Context,
@@ -34,21 +35,32 @@ class SwipeRow @JvmOverloads constructor(
 
     var onDismiss: (() -> Unit)? = null
 
+    /** False to leave only tap and long press, so a sideways drag cannot dismiss the row. */
+    var swipeable = true
+
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
     private var downX = 0f
     private var downY = 0f
     private var dragging = false
+    private var longPressed = false
+    private val longPress = Runnable {
+        longPressed = true
+        row.isPressed = false
+        performLongClick()
+    }
 
     private val backdrop: View get() = getChildAt(0)
     private val row: View get() = getChildAt(1)
 
     init {
         isClickable = true
+        isLongClickable = true
     }
 
     /** Called by the adapter on rebind, since ListView recycles views mid-animation. */
     fun reset() {
         dragging = false
+        removeCallbacks(longPress)
         row.animate().cancel()
         row.translationX = 0f
         row.alpha = 1f
@@ -65,14 +77,18 @@ class SwipeRow @JvmOverloads constructor(
                 downX = event.x
                 downY = event.y
                 dragging = false
+                longPressed = false
                 row.drawableHotspotChanged(event.x, event.y)
                 row.isPressed = true
+                postDelayed(longPress, ViewConfiguration.getLongPressTimeout().toLong())
             }
 
             MotionEvent.ACTION_MOVE -> {
                 val dx = event.x - downX
                 val dy = event.y - downY
-                if (!dragging && abs(dx) > slop && abs(dx) > abs(dy) * 1.5f) {
+                if (longPressed) return true
+                if (abs(dx) > slop || abs(dy) > slop) removeCallbacks(longPress)
+                if (swipeable && !dragging && abs(dx) > slop && abs(dx) > abs(dy) * 1.5f) {
                     dragging = true
                     row.isPressed = false
                     // Only now is it safe to lock the list out of the gesture.
@@ -87,16 +103,20 @@ class SwipeRow @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP -> {
+                removeCallbacks(longPress)
                 row.isPressed = false
-                if (dragging) {
-                    settle(row.translationX)
-                } else if (abs(event.x - downX) <= slop && abs(event.y - downY) <= slop) {
-                    performClick()
+                when {
+                    // The menu is already up; the finger lifting is not a tap.
+                    longPressed -> Unit
+                    dragging -> settle(row.translationX)
+                    abs(event.x - downX) <= slop && abs(event.y - downY) <= slop ->
+                        performClick()
                 }
                 dragging = false
             }
 
             MotionEvent.ACTION_CANCEL -> {
+                removeCallbacks(longPress)
                 row.isPressed = false
                 if (dragging) settle(0f)
                 dragging = false

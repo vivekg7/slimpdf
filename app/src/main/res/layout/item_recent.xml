@@ -62,6 +62,15 @@
                 android:textSize="13sp" />
         </LinearLayout>
 
+        <ImageView
+            android:id="@+id/star"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/favorite"
+            android:src="@drawable/ic_star"
+            android:visibility="gone" />
+
     </LinearLayout>
 
 </com.crylo.slimpdf.SwipeRow>

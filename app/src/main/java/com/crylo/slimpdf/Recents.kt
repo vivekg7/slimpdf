@@ -18,7 +18,8 @@ import java.io.IOException
  * storage, else a content URI. [copy], when set, names the private copy under
  * [Recents.docsDir] that is read instead, because the URI's grant has lapsed — see
  * [Recents.copyIn]. [hash] is the content [Sources.fingerprint], which is what recognises
- * the same document arriving under a new URI.
+ * the same document arriving under a new URI. [favorite] entries are listed first and
+ * never fall off the end of the list.
  */
 data class RecentDoc(
     val uri: String,
@@ -29,14 +30,15 @@ data class RecentDoc(
     val openedAt: Long,
     val copy: String? = null,
     val hash: String? = null,
+    val favorite: Boolean = false,
 )
 
 /**
  * The recents list, kept in SharedPreferences as a JSON array.
  *
- * A database would be the reflex here, but the list is capped at [LIMIT] entries and is
- * rewritten whole on every change, so a room/sqlite dependency would buy nothing but
- * bytes. org.json ships with the platform.
+ * A database would be the reflex here, but the list is capped at [LIMIT] entries plus the
+ * favourites, and is rewritten whole on every change, so a room/sqlite dependency would
+ * buy nothing but bytes. org.json ships with the platform.
  */
 object Recents {
     private const val FILE = "recents"
@@ -62,6 +64,7 @@ object Recents {
                     openedAt = o.optLong("at", 0L),
                     copy = o.optString("copy").ifEmpty { null },
                     hash = o.optString("hash").ifEmpty { null },
+                    favorite = o.optBoolean("fav", false),
                 )
             }
         }
@@ -70,7 +73,10 @@ object Recents {
 
     private fun save(ctx: Context, docs: List<RecentDoc>) {
         val arr = JSONArray()
-        docs.take(LIMIT).forEach { d ->
+        // Only the entries that are not favourites count towards the limit, so a
+        // favourite read long ago is not pushed out by fifty newer documents.
+        var others = 0
+        docs.filter { it.favorite || others++ < LIMIT }.forEach { d ->
             arr.put(
                 JSONObject()
                     .put("uri", d.uri)
@@ -81,6 +87,7 @@ object Recents {
                     .put("at", d.openedAt)
                     .put("copy", d.copy)
                     .put("hash", d.hash)
+                    .put("fav", d.favorite)
             )
         }
         prefs(ctx).edit().putString(KEY, arr.toString()).apply()
@@ -90,12 +97,24 @@ object Recents {
      * Inserts or updates [doc], moving it to the front of the list.
      *
      * An entry with the same content replaces this one too, so a document shared again
-     * under a new URI stays a single entry.
+     * under a new URI stays a single entry. The reader does not know about favourites, so
+     * the flag is carried over from the entry being replaced.
      */
     fun put(ctx: Context, doc: RecentDoc) {
         val docs = load(ctx)
-        docs.removeAll { it.uri == doc.uri || (doc.hash != null && it.hash == doc.hash) }
-        docs.add(0, doc)
+        val same = docs.filter {
+            it.uri == doc.uri || (doc.hash != null && it.hash == doc.hash)
+        }
+        docs.removeAll(same)
+        docs.add(0, doc.copy(favorite = doc.favorite || same.any { it.favorite }))
+        save(ctx, docs)
+    }
+
+    fun setFavorite(ctx: Context, uri: String, favorite: Boolean) {
+        val docs = load(ctx)
+        val i = docs.indexOfFirst { it.uri == uri }
+        if (i < 0) return
+        docs[i] = docs[i].copy(favorite = favorite)
         save(ctx, docs)
     }
 

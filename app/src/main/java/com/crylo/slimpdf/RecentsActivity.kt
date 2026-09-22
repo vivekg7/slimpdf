@@ -10,18 +10,21 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
 import android.text.format.DateUtils
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListView
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 
-/** The launcher screen: everything opened before, most recent first. */
+/** The launcher screen: favourites, then everything else opened before, most recent first. */
 class RecentsActivity : Activity() {
 
     companion object {
@@ -29,6 +32,8 @@ class RecentsActivity : Activity() {
         private const val UNDO_MS = 4500L
         private const val PREFS = "app"
         private const val KEY_ASKED_FILES = "asked_all_files"
+        private const val MENU_FAVORITE = 1
+        private const val MENU_REMOVE = 2
     }
 
     private lateinit var list: ListView
@@ -38,7 +43,12 @@ class RecentsActivity : Activity() {
     private lateinit var undoBar: LinearLayout
     private lateinit var adapter: Adapter
 
+    /** The entries in stored order, most recent first; undo puts one back by its index. */
     private val docs = mutableListOf<RecentDoc>()
+
+    /** What the list shows: section titles (string resource ids) and entries. */
+    private val rows = mutableListOf<Any>()
+
     private val handler = Handler(Looper.getMainLooper())
     private var undoDoc: RecentDoc? = null
     private var undoIndex = 0
@@ -126,6 +136,19 @@ class RecentsActivity : Activity() {
     private fun reload() {
         docs.clear()
         docs += Recents.load(this)
+        rows.clear()
+        val (favorites, others) = docs.partition { it.favorite }
+        // Headings only earn their space once there are two sections to tell apart.
+        if (favorites.isEmpty()) {
+            rows.addAll(others)
+        } else {
+            rows.add(R.string.favorites)
+            rows.addAll(favorites)
+            if (others.isNotEmpty()) {
+                rows.add(R.string.recent)
+                rows.addAll(others)
+            }
+        }
         adapter.notifyDataSetChanged()
         val none = docs.isEmpty()
         empty.visibility = if (none) View.VISIBLE else View.GONE
@@ -187,12 +210,11 @@ class RecentsActivity : Activity() {
 
     // ------------------------------------------------------------------ removal
 
-    private fun remove(position: Int) {
-        if (position !in docs.indices) return
-        val doc = docs.removeAt(position)
+    private fun remove(doc: RecentDoc) {
+        val position = docs.indexOfFirst { it.uri == doc.uri }
+        if (position < 0) return
         Recents.remove(this, doc.uri)
-        adapter.notifyDataSetChanged()
-        if (docs.isEmpty()) reload()
+        reload()
 
         undoDoc = doc
         undoIndex = position
@@ -238,27 +260,69 @@ class RecentsActivity : Activity() {
         }
     }
 
+    /** The long-press menu: the swipe's removal, spelled out, plus favouriting. */
+    private fun showMenu(row: View, doc: RecentDoc) {
+        val menu = PopupMenu(this, row, Gravity.END)
+        menu.menu.add(
+            0, MENU_FAVORITE, 0,
+            if (doc.favorite) R.string.remove_favorite else R.string.add_favorite,
+        )
+        menu.menu.add(0, MENU_REMOVE, 1, R.string.remove_from_recents)
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_FAVORITE -> {
+                    Recents.setFavorite(this, doc.uri, !doc.favorite)
+                    reload()
+                }
+                MENU_REMOVE -> remove(doc)
+            }
+            true
+        }
+        menu.show()
+    }
+
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     // ------------------------------------------------------------------ adapter
 
     private inner class Adapter : BaseAdapter() {
-        override fun getCount(): Int = docs.size
+        override fun getCount(): Int = rows.size
 
-        override fun getItem(position: Int): Any = docs[position]
+        override fun getItem(position: Int): Any = rows[position]
 
-        override fun getItemId(position: Int): Long = docs[position].uri.hashCode().toLong()
+        override fun getItemId(position: Int): Long = rows[position].hashCode().toLong()
+
+        override fun getViewTypeCount(): Int = 2
+
+        override fun getItemViewType(position: Int): Int = if (rows[position] is Int) 1 else 0
+
+        override fun isEnabled(position: Int): Boolean = rows[position] !is Int
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val item = rows[position]
+            if (item is Int) {
+                val title = (convertView as? TextView)
+                    ?: LayoutInflater.from(this@RecentsActivity)
+                        .inflate(R.layout.item_header, parent, false) as TextView
+                title.setText(item)
+                return title
+            }
+
             val row = (convertView as? SwipeRow) ?: LayoutInflater.from(this@RecentsActivity)
                 .inflate(R.layout.item_recent, parent, false) as SwipeRow
             row.reset()
 
-            val doc = docs[position]
+            val doc = item as RecentDoc
             row.findViewById<TextView>(R.id.title).text = doc.name
             row.findViewById<TextView>(R.id.subtitle).text = subtitle(doc)
+            row.findViewById<ImageView>(R.id.star).visibility =
+                if (doc.favorite) View.VISIBLE else View.GONE
             row.setOnClickListener { open(Uri.parse(doc.uri), doc.name, reopen = true) }
-            row.onDismiss = { remove(docs.indexOfFirst { it.uri == doc.uri }) }
+            row.setOnLongClickListener { showMenu(row, doc); true }
+            // A favourite is kept on purpose, so a stray sideways drag must not throw it
+            // away; the long-press menu still removes it.
+            row.swipeable = !doc.favorite
+            row.onDismiss = { remove(doc) }
             return row
         }
 

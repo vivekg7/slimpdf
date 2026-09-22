@@ -1,13 +1,13 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The signed release APK is **75 KB**, and the whole app is 1,852 lines
-of Kotlin compiling to 586 methods in a single dex.
+no third-party PDF engine. The signed release APK is **79 KB**, and the whole app is 1,974 lines
+of Kotlin compiling to 613 methods in a single dex.
 
 |                      |                      |
 | -------------------- | -------------------- |
-| Release APK          | 75 KB (76,996 bytes) |
-| Methods              | 586                  |
+| Release APK          | 79 KB (81,120 bytes) |
+| Methods              | 613                  |
 | Runtime dependencies | none                 |
 | minSdk / targetSdk   | 29 / 36              |
 
@@ -18,6 +18,8 @@ of Kotlin compiling to 586 methods in a single dex.
 - Recents list showing where you left off in each document; swipe a row aside to remove it,
   with an undo. A PDF opened from another app stays openable from there, and picks up
   where you left off even when it is shared again under a new link.
+- Long-press a row to favourite it or remove it. Favourites are listed first, never fall off
+  the end of the list, and cannot be swiped away by accident.
 - Pages run edge to edge under the status bar, except that a document opened at the top
   starts its first page just below it.
 - Resumes at the exact scroll position, and keeps it across rotation and process death.
@@ -28,7 +30,7 @@ of Kotlin compiling to 586 methods in a single dex.
 No text search, no text selection, no copy. `android.graphics.pdf.PdfRenderer` — the
 platform's built-in engine — rasterises pages and exposes no text layer, so any of those
 features would mean bundling PdfBox-Android or an NDK build of MuPDF/PDFium. That is
-8–15 MB against a 65 KB app, which is the opposite of the point. If you need search, this
+8–15 MB against a 79 KB app, which is the opposite of the point. If you need search, this
 is the wrong reader.
 
 Encrypted PDFs also cannot be opened, for the same reason: `PdfRenderer` rejects them.
@@ -190,9 +192,9 @@ original URI, which will usually no longer open.
 ### Why no AndroidX
 
 Nothing here needs it. Day/night comes from resource qualifiers on a platform Material
-theme, the list is a `ListView` with a `BaseAdapter`, swipe-to-dismiss is 122 lines in
-`SwipeRow`, and edge-to-edge insets are 59 lines in `Insets`. AndroidX would add megabytes
-to replace about 276 lines.
+theme, the list is a `ListView` with a `BaseAdapter`, swipe-to-dismiss and long press are
+142 lines in `SwipeRow`, and edge-to-edge insets are 59 lines in `Insets`. AndroidX would
+add megabytes to replace about 296 lines.
 
 The instrumented tests _do_ depend on AndroidX Test. Those are `androidTestImplementation`
 only and never reach the shipped APK — which is what makes the gestures testable at all,
@@ -205,10 +207,10 @@ app/src/main/java/com/crylo/slimpdf/
   PdfDoc.kt           PdfRenderer wrapper: page sizes, region rendering, spill-to-cache
   PdfView.kt          the viewer: layout, gestures, two-tier rendering
   ReaderActivity.kt   owns the document, chrome, position saving
-  RecentsActivity.kt  launcher screen, file picker, swipe-to-remove
-  Recents.kt          the recents store and private copies of handed-over PDFs
+  RecentsActivity.kt  launcher screen, file picker, removal, favourites
+  Recents.kt          the recents store, favourites, private copies of handed-over PDFs
   Sources.kt          content URI to file path, content fingerprints
-  SwipeRow.kt         swipe-to-dismiss list row
+  SwipeRow.kt         list row: swipe to dismiss, tap, long press
   Insets.kt           edge-to-edge plumbing
 ```
 
