@@ -1,13 +1,13 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The signed release APK is **73 KB**, and the whole app is 1,762 lines
-of Kotlin compiling to 576 methods in a single dex.
+no third-party PDF engine. The signed release APK is **75 KB**, and the whole app is 1,852 lines
+of Kotlin compiling to 586 methods in a single dex.
 
 |                      |                      |
 | -------------------- | -------------------- |
-| Release APK          | 73 KB (74,696 bytes) |
-| Methods              | 576                  |
+| Release APK          | 75 KB (76,996 bytes) |
+| Methods              | 586                  |
 | Runtime dependencies | none                 |
 | minSdk / targetSdk   | 29 / 36              |
 
@@ -163,6 +163,14 @@ that will still be readable later, best first:
    later edits to the original.
 
 Android 10 has no all files access, so there it is 2 or 3.
+
+Both dialogs that ask for the access say why first, because the Settings screen it is
+granted on only says what the access allows. If it is switched off after an entry was kept
+by its path, reopening that entry asks again. There is no copy to fall back on then — with
+the access off the file cannot be read where it is, so it cannot be copied either — so the
+alternative offered is to pick the file once in the system picker, whose grant can be kept
+for good. The fingerprint (below) matches the picked file to the entry, so the reading
+position carries over and the entry switches to the picked URI.
 
 Every entry also stores a content fingerprint: SHA-256 over the length and 64 KB from each
 end of the file. Chat apps hand out a fresh URI each time the same file is shared, so the

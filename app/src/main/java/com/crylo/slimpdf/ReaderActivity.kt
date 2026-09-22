@@ -1,6 +1,8 @@
 package com.crylo.slimpdf
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -13,6 +15,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import java.io.File
 
 /** The viewer. Owns the document; [PdfView] owns the rendering. */
@@ -23,6 +26,7 @@ class ReaderActivity : Activity() {
 
         /** Set when opening a recents entry, whose source was settled when it was added. */
         const val EXTRA_REOPEN = "com.crylo.slimpdf.REOPEN"
+        private const val REQ_PICK = 1
         private const val STATE_PAGE = "page"
         private const val STATE_OFFSET = "offset"
         private const val CHROME_HIDE_MS = 2500L
@@ -40,6 +44,10 @@ class ReaderActivity : Activity() {
     /** Where the document is read from and what its recents entry records. */
     private var target: Target? = null
     private var name: String = ""
+    /** What this activity was asked to open, kept for a retry once access is sorted. */
+    private var source: Uri? = null
+    /** Set while the user is in Settings deciding on all files access. */
+    private var awaitingAccess = false
     private var pageCount = 0
     private var restorePage = 0
     private var restoreOffset = 0f
@@ -87,7 +95,8 @@ class ReaderActivity : Activity() {
         pdf.onPageChanged = { page -> showPage(page) }
         pdf.onTap = { setChrome(!chromeShown) }
 
-        load(source, saved)
+        this.source = source
+        load(source, saved, intent.getBooleanExtra(EXTRA_REOPEN, false))
         scheduleHideChrome()
     }
 
@@ -125,10 +134,16 @@ class ReaderActivity : Activity() {
      * because chat apps share the same file under a new URI every time.
      * Runs on the loading thread: it reads the file, and a copy can be large.
      */
-    private fun locate(source: Uri): Target {
-        if (intent.getBooleanExtra(EXTRA_REOPEN, false)) {
+    private fun locate(source: Uri, reopen: Boolean): Target {
+        if (reopen) {
             val doc = Recents.find(this, source.toString())
             val kept = doc?.copy?.let(::copyFile)?.takeIf { it.isFile }
+            // Kept by its path, and all files access has since been switched off.
+            if (kept == null && source.scheme == "file" && Sources.canAskFileAccess() &&
+                !Sources.hasFileAccess() && !File(source.path.orEmpty()).canRead()
+            ) {
+                throw NeedsFileAccess()
+            }
             return Target(
                 read = kept?.let(Uri::fromFile) ?: source,
                 key = source.toString(),
@@ -175,11 +190,12 @@ class ReaderActivity : Activity() {
         return Target(Uri.fromFile(copyFile(copy)), key, copy, hash, doc)
     }
 
-    private fun load(source: Uri, saved: Bundle?) {
+    private fun load(source: Uri, saved: Bundle?, reopen: Boolean) {
+        error.visibility = View.GONE
         progress.visibility = View.VISIBLE
         Thread({
             val result = runCatching {
-                val t = locate(source)
+                val t = locate(source, reopen)
                 t to PdfDoc.open(this, t.read)
             }
             runOnUiThread {
@@ -195,10 +211,75 @@ class ReaderActivity : Activity() {
                             saved?.getFloat(STATE_OFFSET) ?: t.remembered?.offset ?: 0f
                         show(doc)
                     },
-                    onFailure = { showError(messageFor(it)) },
+                    onFailure = {
+                        showError(messageFor(it))
+                        if (it is NeedsFileAccess) askFileAccess()
+                    },
                 )
             }
         }, "pdf-open").start()
+    }
+
+    /** A recents entry kept by its path cannot be read without all files access. */
+    private class NeedsFileAccess : Exception("all files access is off")
+
+    /**
+     * Asks for all files access again, for an entry that was kept by its path.
+     *
+     * Without that access the file cannot be read where it is, so there is nothing to
+     * copy either. The way round is to pick it once in the system picker, whose grant
+     * can be kept for good; the content fingerprint then matches it to this entry, so the
+     * position survives and the entry switches over to the picked file.
+     */
+    private fun askFileAccess() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.files_access_again_title)
+            .setMessage(R.string.files_access_again_message)
+            .setPositiveButton(R.string.files_access_allow) { _, _ ->
+                awaitingAccess = true
+                Sources.openFileAccessSettings(this)
+            }
+            .setNeutralButton(R.string.files_access_pick) { _, _ -> pickInstead() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun pickInstead() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/pdf"
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
+        }
+        try {
+            startActivityForResult(intent, REQ_PICK)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, R.string.no_file_picker, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // As in RecentsActivity: the platform callback is the only option without AndroidX.
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_PICK || resultCode != RESULT_OK) return
+        val picked = data?.data ?: return
+        // Taken again by locate; a fresh open then finds this entry by its content.
+        source = picked
+        // The picker allows any PDF, not only the one this entry was for.
+        name = displayName(picked)
+        findViewById<TextView>(R.id.title).text = name
+        load(picked, null, reopen = false)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!awaitingAccess) return
+        awaitingAccess = false
+        val s = source ?: return
+        if (Sources.hasFileAccess()) load(s, null, reopen = true) else askFileAccess()
     }
 
     private fun show(doc: PdfDoc) {
@@ -214,6 +295,7 @@ class ReaderActivity : Activity() {
 
     private fun messageFor(t: Throwable): String = when (t) {
         is PdfDoc.PasswordProtected -> getString(R.string.error_protected)
+        is NeedsFileAccess -> getString(R.string.error_needs_access)
         is SecurityException -> getString(R.string.error_permission)
         else -> getString(R.string.error_open)
     }

@@ -13,9 +13,13 @@
     <string name="error_protected">This PDF is password protected. SlimPDF cannot open encrypted documents.</string>
     <string name="no_file_picker">No app on this device can pick files.</string>
     <string name="files_access_title">Allow access to all files?</string>
-    <string name="files_access_message">Then a PDF you open from another app stays in recents as the file itself, where it is stored. Without it, SlimPDF keeps its own copy of each one, which takes space and does not pick up later changes to the original.</string>
+    <string name="files_access_message">Why: when another app opens a PDF in SlimPDF, it only lends the file while it is open. With this access, SlimPDF can reopen it from recents later, straight from where it is saved on your phone.\n\nWithout it, SlimPDF keeps its own copy of each such PDF, which takes space and does not show later changes to the original. SlimPDF only reads PDFs; it never changes or deletes files.</string>
     <string name="files_access_allow">Allow</string>
     <string name="files_access_later">Not now</string>
+    <string name="files_access_again_title">SlimPDF needs access to all files</string>
+    <string name="files_access_again_message">Why: this PDF is in recents by where it is saved on your phone, and reading it from there needs access to all files, which is now off.\n\nAllow it again, or pick the file once and SlimPDF will keep access to that file only. You stay on the same page either way.</string>
+    <string name="files_access_pick">Pick the file</string>
+    <string name="error_needs_access">SlimPDF cannot read this PDF where it is saved without access to all files.</string>
     <plurals name="page_count">
         <item quantity="one">%1$d page</item>
         <item quantity="other">%1$d pages</item>

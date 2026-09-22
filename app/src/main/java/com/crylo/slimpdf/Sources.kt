@@ -1,12 +1,16 @@
 package com.crylo.slimpdf
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.provider.Settings
 import java.io.File
 import java.io.FileInputStream
 import java.io.RandomAccessFile
@@ -43,6 +47,25 @@ object Sources {
      */
     fun hasFileAccess(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()
+
+    /** Whether all files access exists on this device to be asked for. */
+    fun canAskFileAccess(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
+    /** Opens the Settings screen where all files access is switched on for this app. */
+    fun openFileAccessSettings(activity: Activity) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val forApp = Intent(
+            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+            Uri.fromParts("package", activity.packageName, null),
+        )
+        try {
+            activity.startActivity(forApp)
+        } catch (e: ActivityNotFoundException) {
+            // Some builds only offer the list of all apps.
+            val all = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+            runCatching { activity.startActivity(all) }
+        }
+    }
 
     private fun pathFor(ctx: Context, uri: Uri): String? {
         if (uri.scheme == "file") return uri.path
