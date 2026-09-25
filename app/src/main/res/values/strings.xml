@@ -16,7 +16,12 @@
     <string name="page_of">%1$d / %2$d</string>
     <string name="error_open">Could not open this PDF.</string>
     <string name="error_permission">This document is no longer accessible. It may have been moved or deleted, or the permission was revoked.</string>
-    <string name="error_protected">This PDF is password protected. SlimPDF cannot open encrypted documents.</string>
+    <string name="error_protected">This PDF is password protected. Open it again to enter the password.</string>
+    <string name="error_protected_old">This PDF is password protected. SlimPDF can open protected PDFs on Android 15 and later.</string>
+    <string name="password_title">Password protected</string>
+    <string name="password_message">Enter the password to open this PDF.</string>
+    <string name="password_wrong">Wrong password</string>
+    <string name="password_open">Open</string>
     <string name="no_file_picker">No app on this device can pick files.</string>
     <string name="files_access_title">Allow access to all files?</string>
     <string name="files_access_message">Why: when another app opens a PDF in SlimPDF, it only lends the file while it is open. With this access, SlimPDF can reopen it from recents later, straight from where it is saved on your phone.\n\nWithout it, SlimPDF keeps its own copy of each such PDF, which takes space and does not show later changes to the original. SlimPDF only reads PDFs; it never changes or deletes files.</string>

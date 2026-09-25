@@ -4,8 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.pdf.LoadParams
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import java.io.File
 import java.io.FileOutputStream
@@ -81,20 +83,39 @@ class PdfDoc private constructor(
         spill?.delete()
     }
 
-    /** Thrown for encrypted documents, which [PdfRenderer] cannot open. */
-    class PasswordProtected : IOException("PDF is password protected")
+    /**
+     * Thrown for an encrypted document opened without its password, or with a wrong one.
+     * [PdfRenderer] reports both the same way, so [wrong] only records whether a password
+     * was tried.
+     */
+    class PasswordProtected(val wrong: Boolean) : IOException("PDF is password protected")
 
     companion object {
-        fun open(ctx: Context, uri: Uri): PdfDoc {
+        /**
+         * Whether an encrypted document can be opened here. The platform only takes a
+         * password from Android 15; before that the only way would be bundling a PDF
+         * engine, which this app does not do.
+         */
+        val canUnlock: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+
+        private fun renderer(fd: ParcelFileDescriptor, password: String?): PdfRenderer =
+            if (password != null && canUnlock) {
+                PdfRenderer(fd, LoadParams.Builder().setPassword(password).build())
+            } else {
+                PdfRenderer(fd)
+            }
+
+        /** [password] is ignored where [canUnlock] is false. */
+        fun open(ctx: Context, uri: Uri, password: String? = null): PdfDoc {
             // The fast path: a seekable descriptor straight from the provider.
             val direct = runCatching { ctx.contentResolver.openFileDescriptor(uri, "r") }
                 .getOrNull()
             if (direct != null) {
                 try {
-                    return PdfDoc(direct, PdfRenderer(direct), null)
+                    return PdfDoc(direct, renderer(direct, password), null)
                 } catch (e: SecurityException) {
                     direct.close()
-                    throw PasswordProtected()
+                    throw PasswordProtected(wrong = password != null)
                 } catch (e: Exception) {
                     // Some providers (mail attachments, a few cloud clients) hand back a
                     // pipe, which PdfRenderer rejects because it must seek. Fall through
@@ -110,10 +131,10 @@ class PdfDoc private constructor(
                 input.use { i -> FileOutputStream(spill).use { o -> i.copyTo(o) } }
                 val fd = ParcelFileDescriptor.open(spill, ParcelFileDescriptor.MODE_READ_ONLY)
                 try {
-                    return PdfDoc(fd, PdfRenderer(fd), spill)
+                    return PdfDoc(fd, renderer(fd, password), spill)
                 } catch (e: SecurityException) {
                     fd.close()
-                    throw PasswordProtected()
+                    throw PasswordProtected(wrong = password != null)
                 } catch (e: Throwable) {
                     fd.close()
                     throw e

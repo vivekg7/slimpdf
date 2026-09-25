@@ -33,7 +33,11 @@ features would mean bundling PdfBox-Android or an NDK build of MuPDF/PDFium. Tha
 8–15 MB against a 79 KB app, which is the opposite of the point. If you need search, this
 is the wrong reader.
 
-Encrypted PDFs also cannot be opened, for the same reason: `PdfRenderer` rejects them.
+Password-protected PDFs open on Android 15 and later, where `PdfRenderer` accepts a
+password. On Android 10–14 they cannot be opened, for the same reason as above: the
+platform engine there takes no password, and working around it means bundling one. The
+password is asked for each time and never stored — keeping it safely would take
+Keystore-backed storage, which a reader should not need.
 
 ## Building
 

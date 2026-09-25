@@ -3,13 +3,18 @@ package com.crylo.slimpdf
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
+import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
+import android.text.InputType
 import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -46,6 +51,8 @@ class ReaderActivity : Activity() {
     private var name: String = ""
     /** What this activity was asked to open, kept for a retry once access is sorted. */
     private var source: Uri? = null
+    /** Showing while an encrypted document waits for its password. */
+    private var passwordDialog: AlertDialog? = null
     /** Set while the user is in Settings deciding on all files access. */
     private var awaitingAccess = false
     private var pageCount = 0
@@ -191,13 +198,23 @@ class ReaderActivity : Activity() {
         return Target(Uri.fromFile(copyFile(copy)), key, copy, hash, doc)
     }
 
-    private fun load(source: Uri, saved: Bundle?, reopen: Boolean) {
+    private fun load(source: Uri, saved: Bundle?, reopen: Boolean) =
+        open(saved, null) { locate(source, reopen) }
+
+    /**
+     * Opens the document [where] resolves to, on the loading thread.
+     *
+     * An encrypted document asks for its password and comes back here with the [Target]
+     * already settled, so a retry does not copy or fingerprint the file again.
+     */
+    private fun open(saved: Bundle?, password: String?, where: () -> Target) {
         error.visibility = View.GONE
         progress.visibility = View.VISIBLE
         Thread({
+            var located: Target? = null
             val result = runCatching {
-                val t = locate(source, reopen)
-                t to PdfDoc.open(this, t.read)
+                val t = where().also { located = it }
+                t to PdfDoc.open(this, t.read, password)
             }
             runOnUiThread {
                 if (isFinishing || isDestroyed) {
@@ -213,12 +230,60 @@ class ReaderActivity : Activity() {
                         show(doc)
                     },
                     onFailure = {
-                        showError(messageFor(it))
-                        if (it is NeedsFileAccess) askFileAccess()
+                        val t = located
+                        if (it is PdfDoc.PasswordProtected && PdfDoc.canUnlock && t != null) {
+                            askPassword(t, saved, it.wrong)
+                        } else {
+                            showError(messageFor(it))
+                            if (it is NeedsFileAccess) askFileAccess()
+                        }
                     },
                 )
             }
         }, "pdf-open").start()
+    }
+
+    /**
+     * Asks for the password of the encrypted document at [t].
+     *
+     * The password lives only as long as this call: it is never written to recents or to
+     * the saved state, so reopening the document asks again. Keeping it would mean
+     * Keystore-backed storage, and a reader has no business holding secrets.
+     */
+    private fun askPassword(t: Target, saved: Bundle?, wrong: Boolean) {
+        progress.visibility = View.GONE
+        val field = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            if (wrong) this.error = getString(R.string.password_wrong)
+        }
+        // AlertDialog.setView gives the view no inset; this matches the message's margins.
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val box = FrameLayout(this).apply {
+            setPaddingRelative(pad, 0, pad, 0)
+            addView(field)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.password_title)
+            .setMessage(R.string.password_message)
+            .setView(box)
+            .setPositiveButton(R.string.password_open) { _, _ ->
+                open(saved, field.text.toString()) { t }
+            }
+            .setNegativeButton(android.R.string.cancel) { d, _ -> d.cancel() }
+            .create()
+        // Back, a tap outside and Cancel all end here: the document stays closed.
+        dialog.setOnCancelListener { showError(getString(R.string.error_protected)) }
+        dialog.setOnDismissListener { passwordDialog = null }
+        field.setOnEditorActionListener { _, action, _ ->
+            if (action != EditorInfo.IME_ACTION_DONE) return@setOnEditorActionListener false
+            dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick()
+            true
+        }
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        passwordDialog = dialog
+        dialog.show()
+        field.requestFocus()
     }
 
     /** A recents entry kept by its path cannot be read without all files access. */
@@ -295,7 +360,9 @@ class ReaderActivity : Activity() {
     }
 
     private fun messageFor(t: Throwable): String = when (t) {
-        is PdfDoc.PasswordProtected -> getString(R.string.error_protected)
+        is PdfDoc.PasswordProtected -> getString(
+            if (PdfDoc.canUnlock) R.string.error_protected else R.string.error_protected_old
+        )
         is NeedsFileAccess -> getString(R.string.error_needs_access)
         is SecurityException -> getString(R.string.error_permission)
         else -> getString(R.string.error_open)
@@ -398,6 +465,7 @@ class ReaderActivity : Activity() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        passwordDialog?.dismiss()
         pdf.close()
         super.onDestroy()
     }
