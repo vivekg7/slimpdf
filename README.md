@@ -1,13 +1,13 @@
 # SlimPDF
 
 A PDF reader for Android with no runtime dependencies at all — no AndroidX, no Compose,
-no third-party PDF engine. The signed release APK is **79 KB**, and the whole app is 1,974 lines
-of Kotlin compiling to 613 methods in a single dex.
+no third-party PDF engine. The signed release APK is **85 KB**, and the whole app is 2,130 lines
+of Kotlin compiling to 682 methods in a single dex.
 
 |                      |                      |
 | -------------------- | -------------------- |
-| Release APK          | 79 KB (81,076 bytes) |
-| Methods              | 613                  |
+| Release APK          | 85 KB (86,616 bytes) |
+| Methods              | 682                  |
 | Runtime dependencies | none                 |
 | minSdk / targetSdk   | 29 / 37              |
 
@@ -30,7 +30,7 @@ of Kotlin compiling to 613 methods in a single dex.
 No text search, no text selection, no copy. `android.graphics.pdf.PdfRenderer` — the
 platform's built-in engine — rasterises pages and exposes no text layer, so any of those
 features would mean bundling PdfBox-Android or an NDK build of MuPDF/PDFium. That is
-8–15 MB against a 79 KB app, which is the opposite of the point. If you need search, this
+8–15 MB against an 85 KB app, which is the opposite of the point. If you need search, this
 is the wrong reader.
 
 Password-protected PDFs open on Android 15 and later, where `PdfRenderer` accepts a
