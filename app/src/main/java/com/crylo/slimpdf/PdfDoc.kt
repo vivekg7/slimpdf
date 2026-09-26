@@ -1,14 +1,18 @@
 package com.crylo.slimpdf
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.pdf.LoadParams
 import android.graphics.pdf.PdfRenderer
+import android.graphics.pdf.PdfRendererPreV
+import android.graphics.pdf.RenderParams
 import android.net.Uri
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.ext.SdkExtensions
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -23,7 +27,7 @@ import java.io.IOException
  */
 class PdfDoc private constructor(
     private val fd: ParcelFileDescriptor,
-    private val renderer: PdfRenderer,
+    private val renderer: Engine,
     /** Non-null when the source had to be copied locally; deleted on [close]. */
     private val spill: File?,
 ) {
@@ -39,10 +43,7 @@ class PdfDoc private constructor(
      */
     val sizes: FloatArray = FloatArray(pageCount * 2).also { out ->
         for (i in 0 until pageCount) {
-            renderer.openPage(i).use { page ->
-                out[i * 2] = page.width.toFloat()
-                out[i * 2 + 1] = page.height.toFloat()
-            }
+            renderer.measure(i, out)
         }
     }
 
@@ -72,15 +73,65 @@ class PdfDoc private constructor(
         val m = Matrix()
         m.setScale(scale, scale)
         m.postTranslate(-offsetX, -offsetY)
-        renderer.openPage(page).use { p ->
-            p.render(bmp, null, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-        }
+        renderer.render(page, bmp, m)
     }
 
     fun close() {
         runCatching { renderer.close() }
         runCatching { fd.close() }
         spill?.delete()
+    }
+
+    /**
+     * What [PdfDoc] needs of a renderer. [PdfRenderer] and [PdfRendererPreV] do the same
+     * job but share no type, so each gets a thin wrapper.
+     */
+    private interface Engine {
+        val pageCount: Int
+
+        /** Writes [page]'s width and height in points into [out] at `page * 2`. */
+        fun measure(page: Int, out: FloatArray)
+
+        fun render(page: Int, bmp: Bitmap, m: Matrix)
+
+        fun close()
+    }
+
+    private class Platform(private val r: PdfRenderer) : Engine {
+        override val pageCount: Int get() = r.pageCount
+
+        override fun measure(page: Int, out: FloatArray) = r.openPage(page).use {
+            out[page * 2] = it.width.toFloat()
+            out[page * 2 + 1] = it.height.toFloat()
+        }
+
+        override fun render(page: Int, bmp: Bitmap, m: Matrix) = r.openPage(page).use {
+            it.render(bmp, null, m, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        }
+
+        override fun close() = r.close()
+    }
+
+    /**
+     * Only ever built behind [hasPreV]. Lint cannot see that from inside the class, and
+     * the annotation that would tell it, `@RequiresExtension`, is AndroidX-only.
+     */
+    @SuppressLint("NewApi", "InlinedApi")
+    private class PreV(private val r: PdfRendererPreV) : Engine {
+        private val params = RenderParams.Builder(RenderParams.RENDER_MODE_FOR_DISPLAY).build()
+
+        override val pageCount: Int get() = r.pageCount
+
+        override fun measure(page: Int, out: FloatArray) = r.openPage(page).use {
+            out[page * 2] = it.width.toFloat()
+            out[page * 2 + 1] = it.height.toFloat()
+        }
+
+        override fun render(page: Int, bmp: Bitmap, m: Matrix) = r.openPage(page).use {
+            it.render(bmp, null, m, params)
+        }
+
+        override fun close() = r.close()
     }
 
     /**
@@ -92,18 +143,34 @@ class PdfDoc private constructor(
 
     companion object {
         /**
-         * Whether an encrypted document can be opened here. The platform only takes a
-         * password from Android 15; before that the only way would be bundling a PDF
-         * engine, which this app does not do.
+         * Whether [PdfRendererPreV] is here: Android 12–14 with the PDF module at SDK
+         * extension 13, which arrives through a Google Play system update rather than with
+         * the OS. From Android 15 [PdfRenderer] takes a password itself.
          */
-        val canUnlock: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+        private val hasPreV: Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM &&
+                SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13
 
-        private fun renderer(fd: ParcelFileDescriptor, password: String?): PdfRenderer =
-            if (password != null && canUnlock) {
-                PdfRenderer(fd, LoadParams.Builder().setPassword(password).build())
-            } else {
-                PdfRenderer(fd)
-            }
+        /**
+         * Whether an encrypted document can be opened here. Anything older than the two
+         * cases above would mean bundling a PDF engine, which this app does not do.
+         */
+        val canUnlock: Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM || hasPreV
+
+        /**
+         * Documents without a password always go through [PdfRenderer], so [PdfRendererPreV]
+         * is only ever used for the encrypted ones it is needed for.
+         */
+        private fun renderer(fd: ParcelFileDescriptor, password: String?): Engine = when {
+            password == null -> Platform(PdfRenderer(fd))
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM ->
+                Platform(PdfRenderer(fd, LoadParams.Builder().setPassword(password).build()))
+            hasPreV ->
+                PreV(PdfRendererPreV(fd, LoadParams.Builder().setPassword(password).build()))
+            else -> Platform(PdfRenderer(fd))
+        }
 
         /** [password] is ignored where [canUnlock] is false. */
         fun open(ctx: Context, uri: Uri, password: String? = null): PdfDoc {

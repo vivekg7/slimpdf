@@ -17,7 +17,7 @@
     <string name="error_open">Could not open this PDF.</string>
     <string name="error_permission">This document is no longer accessible. It may have been moved or deleted, or the permission was revoked.</string>
     <string name="error_protected">This PDF is password protected. Open it again to enter the password.</string>
-    <string name="error_protected_old">This PDF is password protected. SlimPDF can open protected PDFs on Android 15 and later.</string>
+    <string name="error_protected_old">This PDF is password protected. SlimPDF can open protected PDFs on Android 12 and later, with current Google Play system updates.</string>
     <string name="password_title">Password protected</string>
     <string name="password_message">Enter the password to open this PDF.</string>
     <string name="password_wrong">Wrong password</string>

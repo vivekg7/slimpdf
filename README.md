@@ -34,10 +34,13 @@ features would mean bundling PdfBox-Android or an NDK build of MuPDF/PDFium. Tha
 is the wrong reader.
 
 Password-protected PDFs open on Android 15 and later, where `PdfRenderer` accepts a
-password. On Android 10–14 they cannot be opened, for the same reason as above: the
-platform engine there takes no password, and working around it means bundling one. The
-password is asked for each time and never stored — keeping it safely would take
-Keystore-backed storage, which a reader should not need.
+password. On Android 12–14 they open through `PdfRendererPreV`, which Google Play system
+updates add to the platform (SDK extension 13), so a device without those updates cannot
+open them. Neither can Android 10–11, for the same reason as above: the platform engine
+there takes no password, and working around it means bundling one. Documents without a
+password always go through `PdfRenderer`. The password is asked for each time and never
+stored — keeping it safely would take Keystore-backed storage, which a reader should not
+need.
 
 ## Building
 
